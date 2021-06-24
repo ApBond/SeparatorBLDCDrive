@@ -1,19 +1,47 @@
 #include "currentLoop.h"
+
+extern TIM_HandleTypeDef htim1;
+
 float currentAmp;
 
 void ADC_IRQHandler(void)
 {
-	static uint32_t current=0;
+	static int32_t current=0;
+	uint16_t adcRez;
 	static uint16_t measurmentCount=0;
 	if((ADC1->SR & ADC_SR_JEOC_Msk) !=0)
 	{
 		ADC1->SR&=~ADC_SR_JEOC;//Сбросить флаг
-		current+=ADC1->JDR1;
+		adcRez=ADC1->JDR1;
+		/*if((adcRez-CURRENT_SENSOR_OFFSET)>CURRENT_BREAK_LIMIT)
+		{
+			GPIOC->ODR&=(~(AL|BL|CL));
+			TIM1->CCR1=0;
+			TIM1->CCR2=0;
+			TIM1->CCR3=0;
+			HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_1);
+			HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_2);
+			HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_3);
+		}*/
+		current+=adcRez;
 		measurmentCount++;
 		if(measurmentCount==MEASURMENT_COUNT)
 		{
 			current/=MEASURMENT_COUNT;
-			currentAmp=((float)((float)(current-CURRENT_SENSOR_OFFSET)*0.00081)/CURRENT_SENSOR_SENSETIVITY);
+			if(current-CURRENT_SENSOR_OFFSET>0)
+				currentAmp=((float)((float)(current-CURRENT_SENSOR_OFFSET)*0.00081)/CURRENT_SENSOR_SENSETIVITY);
+			else
+				currentAmp=0;
+			if(currentAmp>CURRENT_BREAK_LIMIT_AMP)
+			{
+				GPIOC->ODR&=(~(AL|BL|CL));
+				TIM1->CCR1=0;
+				TIM1->CCR2=0;
+				TIM1->CCR3=0;
+				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_1);
+				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_2);
+				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_3);
+			}
 			current=0;
 			measurmentCount=0;
 		}

@@ -36,16 +36,12 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define AL (1<<0)
-#define AH (1<<1)
-#define BL (1<<2)
-#define BH (1<<3)
-#define CL (1<<4)
-#define CH (1<<5)
+
 
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
 uint8_t direction=0;
@@ -56,6 +52,7 @@ uint8_t count=0;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -65,27 +62,36 @@ static void MX_GPIO_Init(void);
 
 void sixStep(uint8_t step)
 {
-	GPIOC->ODR&=(~(AL|AH|BL|BH|CL|CH));
+	GPIOC->ODR&=(~(AL|BL|CL));
+	TIM1->CCR1=0;
+	TIM1->CCR2=0;
+	TIM1->CCR3=0;
 	if(direction==0)
 	{
 		switch(step)
 		{
 			case 0:
-				GPIOC->ODR|=AH|BL;
+				AH=3000;
+				GPIOC->ODR|=BL;
 				break;
 			case 1:
-				GPIOC->ODR|=AH|CL;
+				AH=3000;
+				GPIOC->ODR|=CL;
 				break;
 			case 2:
-				GPIOC->ODR|=BH|CL;
+				BH=3000;
+				GPIOC->ODR|=CL;
 				break;
 			case 3:
-				GPIOC->ODR|=AL|BH;
+				BH=3000;
+				GPIOC->ODR|=AL;
 				break;
 			case 4:
-				GPIOC->ODR|=AL|CH;
+				CH=3000;
+				GPIOC->ODR|=AL;
 				break;
 			case 5:
+				CH=3000;
 				GPIOC->ODR|=BL|CH;
 				break;
 		}
@@ -95,22 +101,28 @@ void sixStep(uint8_t step)
 		switch(step)
 		{
 			case 0:
-				GPIOC->ODR|=CH|BL;
+				CH=3000;
+				GPIOC->ODR|=BL;
 				break;
 			case 1:
-				GPIOC->ODR|=CH|AL;
+				CH=3000;
+				GPIOC->ODR|=AL;
 				break;
 			case 2:
-				GPIOC->ODR|=BH|AL;
+				BH=3000;
+				GPIOC->ODR|=AL;
 				break;
 			case 3:
-				GPIOC->ODR|=CL|BH;
+				BH=3000;
+				GPIOC->ODR|=CL;
 				break;
 			case 4:
-				GPIOC->ODR|=CL|AH;
+				AH=3000;
+				GPIOC->ODR|=CL;
 				break;
 			case 5:
-				GPIOC->ODR|=BL|AH;
+				AH=3000;
+				GPIOC->ODR|=BL;
 				break;
 		}
 	}
@@ -148,6 +160,12 @@ void EXTI15_10_IRQHandler(void)
 {
 	static uint8_t statePosition=0;
 	uint8_t hallState;
+	TIM1->CCR1=0;
+	TIM1->CCR2=0;
+	TIM1->CCR3=0;
+	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_2);
+	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_3);
 	EXTI->PR|=EXTI_PR_PR13;
 	hallState=GPIOB->IDR & 0x7;
 	count=1;
@@ -221,6 +239,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 	buttonInit();
 	adcInit(0);
@@ -293,6 +312,79 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 6250;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
+  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
+  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
+  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
+  if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+  HAL_TIM_MspPostInit(&htim1);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -308,13 +400,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
-                          |GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, AL_Pin|BL_Pin|CL_Pin|GPIO_PIN_4
+                          |GPIO_PIN_5, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PC0 PC1 PC2 PC3
-                           PC4 PC5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
-                          |GPIO_PIN_4|GPIO_PIN_5;
+  /*Configure GPIO pins : AL_Pin BL_Pin CL_Pin PC4
+                           PC5 */
+  GPIO_InitStruct.Pin = AL_Pin|BL_Pin|CL_Pin|GPIO_PIN_4
+                          |GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

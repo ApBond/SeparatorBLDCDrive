@@ -42,13 +42,20 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+#define AL (1<<0)
+#define AH (TIM1->CCR1)
+#define BL (1<<1)
+#define BH (TIM1->CCR2)
+#define CL (1<<2)
+#define CH (TIM1->CCR3)
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
 /* USER CODE END EM */
+
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
@@ -58,6 +65,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define AL_Pin GPIO_PIN_0
+#define AL_GPIO_Port GPIOC
+#define BL_Pin GPIO_PIN_1
+#define BL_GPIO_Port GPIOC
+#define CL_Pin GPIO_PIN_2
+#define CL_GPIO_Port GPIOC
+#define AH_Pin GPIO_PIN_8
+#define AH_GPIO_Port GPIOA
+#define BH_Pin GPIO_PIN_9
+#define BH_GPIO_Port GPIOA
+#define CH_Pin GPIO_PIN_10
+#define CH_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
