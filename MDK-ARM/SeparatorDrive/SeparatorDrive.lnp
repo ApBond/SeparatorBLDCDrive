@@ -3,6 +3,7 @@
 "separatordrive\main.o"
 "separatordrive\stm32f4xx_it.o"
 "separatordrive\stm32f4xx_hal_msp.o"
+"separatordrive\currentloop.o"
 "separatordrive\stm32f4xx_hal_tim.o"
 "separatordrive\stm32f4xx_hal_tim_ex.o"
 "separatordrive\stm32f4xx_hal_rcc.o"

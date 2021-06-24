@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "currentLoop.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -178,7 +178,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		direction=1;
 		count++;
 		sixStep(step);
-		if(count=4) count=0;
+		if(count==4) count=0;
 	}
 	if(count==1)
 	{
@@ -223,6 +223,9 @@ int main(void)
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
 	buttonInit();
+	adcInit(0);
+	Tim5InitTrigger();
+	setTriggerPetiod(1);
 	GPIOC->ODR&=(~(AL|AH|BL|BH|CL|CH));
   /* USER CODE END 2 */
 
