@@ -1,0 +1,25 @@
+--cpu=Cortex-M4.fp.sp
+"separatordrive\startup_stm32f411xe.o"
+"separatordrive\main.o"
+"separatordrive\stm32f4xx_it.o"
+"separatordrive\stm32f4xx_hal_msp.o"
+"separatordrive\stm32f4xx_hal_tim.o"
+"separatordrive\stm32f4xx_hal_tim_ex.o"
+"separatordrive\stm32f4xx_hal_rcc.o"
+"separatordrive\stm32f4xx_hal_rcc_ex.o"
+"separatordrive\stm32f4xx_hal_flash.o"
+"separatordrive\stm32f4xx_hal_flash_ex.o"
+"separatordrive\stm32f4xx_hal_flash_ramfunc.o"
+"separatordrive\stm32f4xx_hal_gpio.o"
+"separatordrive\stm32f4xx_hal_dma_ex.o"
+"separatordrive\stm32f4xx_hal_dma.o"
+"separatordrive\stm32f4xx_hal_pwr.o"
+"separatordrive\stm32f4xx_hal_pwr_ex.o"
+"separatordrive\stm32f4xx_hal_cortex.o"
+"separatordrive\stm32f4xx_hal.o"
+"separatordrive\stm32f4xx_hal_exti.o"
+"separatordrive\system_stm32f4xx.o"
+--library_type=microlib --strict --scatter "SeparatorDrive\SeparatorDrive.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "SeparatorDrive.map" -o SeparatorDrive\SeparatorDrive.axf
