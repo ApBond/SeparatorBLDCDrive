@@ -54,7 +54,9 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
-
+extern PIDHandle_t currentLoopPID;
+extern uint16_t controllImpact;
+extern uint8_t regulatorStart;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -71,27 +73,27 @@ void sixStep(uint8_t step)
 		switch(step)
 		{
 			case 0:
-				AH=3000;
+				AH=controllImpact;
 				GPIOC->ODR|=BL;
 				break;
 			case 1:
-				AH=3000;
+				AH=controllImpact;
 				GPIOC->ODR|=CL;
 				break;
 			case 2:
-				BH=3000;
+				BH=controllImpact;
 				GPIOC->ODR|=CL;
 				break;
 			case 3:
-				BH=3000;
+				BH=controllImpact;
 				GPIOC->ODR|=AL;
 				break;
 			case 4:
-				CH=3000;
+				CH=controllImpact;
 				GPIOC->ODR|=AL;
 				break;
 			case 5:
-				CH=3000;
+				CH=controllImpact;
 				GPIOC->ODR|=BL|CH;
 				break;
 		}
@@ -101,27 +103,27 @@ void sixStep(uint8_t step)
 		switch(step)
 		{
 			case 0:
-				CH=3000;
+				CH=controllImpact;
 				GPIOC->ODR|=BL;
 				break;
 			case 1:
-				CH=3000;
+				CH=controllImpact;
 				GPIOC->ODR|=AL;
 				break;
 			case 2:
-				BH=3000;
+				BH=controllImpact;
 				GPIOC->ODR|=AL;
 				break;
 			case 3:
-				BH=3000;
+				BH=controllImpact;
 				GPIOC->ODR|=CL;
 				break;
 			case 4:
-				AH=3000;
+				AH=controllImpact;
 				GPIOC->ODR|=CL;
 				break;
 			case 5:
-				AH=3000;
+				AH=controllImpact;
 				GPIOC->ODR|=BL;
 				break;
 		}
@@ -160,12 +162,15 @@ void EXTI15_10_IRQHandler(void)
 {
 	static uint8_t statePosition=0;
 	uint8_t hallState;
-	TIM1->CCR1=0;
+	currentLoopPID.integralTerm=0;
+	currentLoopPID.prevError=0;
+	/*TIM1->CCR1=0;
 	TIM1->CCR2=0;
-	TIM1->CCR3=0;
+	TIM1->CCR3=0;*/
 	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_2);
 	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_3);
+	regulatorStart=1;
 	EXTI->PR|=EXTI_PR_PR13;
 	hallState=GPIOB->IDR & 0x7;
 	count=1;
@@ -191,19 +196,30 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	uint8_t step=0xF;
 	uint8_t hallState = GPIOB->IDR & 0x7;
 	step=getHallState(hallState);
-	if(count>1 && count<=4)
+	if(count==1)
+	{
+		sixStep(step);
+		count=2;
+	}
+	if(count==2 && hallState!=beginState)
+	{
+		direction=1;
+		sixStep(step);
+		count=0;
+	}
+	/*if(count>1 && count<=4)
 	{
 		direction=1;
 		count++;
 		sixStep(step);
-		if(count==4) count=0;
+		if(count=4) count=0;
 	}
 	if(count==1)
 	{
 		direction=0;
 		sixStep(step);
 		count=2;
-	}
+	}*/
 	
 }
 

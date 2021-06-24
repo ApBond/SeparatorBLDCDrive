@@ -1,8 +1,19 @@
 #include "currentLoop.h"
 
 extern TIM_HandleTypeDef htim1;
-
+uint16_t controllImpact;
 float currentAmp;
+uint8_t regulatorStart=0;
+float currentRef=CURRENT_REFERENCE;
+
+PIDHandle_t currentLoopPID=
+{
+	.kp=1,
+  .ki=0.4,
+  .kd=0.3,
+  .prevError=0,
+  .integralTerm=0
+};
 
 void ADC_IRQHandler(void)
 {
@@ -13,16 +24,6 @@ void ADC_IRQHandler(void)
 	{
 		ADC1->SR&=~ADC_SR_JEOC;//Сбросить флаг
 		adcRez=ADC1->JDR1;
-		/*if((adcRez-CURRENT_SENSOR_OFFSET)>CURRENT_BREAK_LIMIT)
-		{
-			GPIOC->ODR&=(~(AL|BL|CL));
-			TIM1->CCR1=0;
-			TIM1->CCR2=0;
-			TIM1->CCR3=0;
-			HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_1);
-			HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_2);
-			HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_3);
-		}*/
 		current+=adcRez;
 		measurmentCount++;
 		if(measurmentCount==MEASURMENT_COUNT)
@@ -41,12 +42,34 @@ void ADC_IRQHandler(void)
 				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_1);
 				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_2);
 				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_3);
+				regulatorStart=0;
+			}
+			if(regulatorStart)
+			{
+				controllImpact=(uint16_t)PIDController(&currentLoopPID,currentRef-currentAmp);
+				if(controllImpact<0) controllImpact=0;
+				if(controllImpact>TIM_PWM_LIMIT) controllImpact=TIM_PWM_LIMIT;
+				if(TIM1->CCR1!=0) TIM1->CCR1=controllImpact;
+				if(TIM1->CCR2!=0) TIM1->CCR2=controllImpact;
+				if(TIM1->CCR3!=0) TIM1->CCR3=controllImpact;
 			}
 			current=0;
 			measurmentCount=0;
 		}
 	}
 }
+
+
+float PIDController(PIDHandle_t * PID,float error)
+{
+    float deltaError = error - PID->prevError;
+    float controllerOut;
+    PID->prevError=error;
+    PID->integralTerm+=error;
+    controllerOut=error*PID->kp+PID->integralTerm*PID->ki+deltaError*PID->kd;
+    return controllerOut;
+}
+
 
 void adcInit(uint8_t channel)
 {
@@ -77,5 +100,6 @@ void setTriggerPetiod(uint16_t period_us)
 	TIM5->ARR=period_us;//Период в мкс
 	TIM5->CR1|=TIM_CR1_CEN;//Включить таймер
 }
+
 
 
