@@ -5,6 +5,7 @@ uint16_t controllImpact;
 float currentAmp;
 uint8_t regulatorStart=0;
 float currentRef=CURRENT_REFERENCE;
+uint8_t overCurrentFlag=0;
 
 PIDHandle_t currentLoopPID=
 {
@@ -43,15 +44,16 @@ void ADC_IRQHandler(void)
 				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_2);
 				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_3);
 				regulatorStart=0;
+				overCurrentFlag=1;
 			}
 			if(regulatorStart)
 			{
 				controllImpact=(uint16_t)PIDController(&currentLoopPID,currentRef-currentAmp);
 				if(controllImpact<0) controllImpact=0;
 				if(controllImpact>TIM_PWM_LIMIT) controllImpact=TIM_PWM_LIMIT;
-				if(TIM1->CCR1!=0) TIM1->CCR1=controllImpact;
-				if(TIM1->CCR2!=0) TIM1->CCR2=controllImpact;
-				if(TIM1->CCR3!=0) TIM1->CCR3=controllImpact;
+				TIM1->CCR1=controllImpact;
+				TIM1->CCR2=controllImpact;
+				TIM1->CCR3=controllImpact;
 			}
 			current=0;
 			measurmentCount=0;

@@ -43,11 +43,11 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 #define AL (1<<0)
-#define AH (TIM1->CCR1)
+#define AH (TIM_CHANNEL_1)
 #define BL (1<<1)
-#define BH (TIM1->CCR2)
+#define BH (TIM_CHANNEL_2)
 #define CL (1<<2)
-#define CH (TIM1->CCR3)
+#define CH (TIM_CHANNEL_3)
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

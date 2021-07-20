@@ -44,9 +44,10 @@
 TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
-uint8_t direction=0;
+uint8_t direction=1;
 uint8_t beginState;
 uint8_t count=0;
+uint8_t startFlag=0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,121 +63,97 @@ extern uint8_t regulatorStart;
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void sixStep(uint8_t step)
+void sixStep(uint8_t ha,uint8_t hb,uint8_t hc)
 {
 	GPIOC->ODR&=(~(AL|BL|CL));
-	TIM1->CCR1=0;
-	TIM1->CCR2=0;
-	TIM1->CCR3=0;
+	HAL_TIM_PWM_Stop(&htim1,AH);
+	HAL_TIM_PWM_Stop(&htim1,BH);
+	HAL_TIM_PWM_Stop(&htim1,CH);
 	if(direction==0)
 	{
-		switch(step)
+		if(ha && (!hb) && hc)
 		{
-			case 0:
-				AH=controllImpact;
-				GPIOC->ODR|=BL;
-				break;
-			case 1:
-				AH=controllImpact;
-				GPIOC->ODR|=CL;
-				break;
-			case 2:
-				BH=controllImpact;
-				GPIOC->ODR|=CL;
-				break;
-			case 3:
-				BH=controllImpact;
-				GPIOC->ODR|=AL;
-				break;
-			case 4:
-				CH=controllImpact;
-				GPIOC->ODR|=AL;
-				break;
-			case 5:
-				CH=controllImpact;
-				GPIOC->ODR|=BL|CH;
-				break;
+			HAL_TIM_PWM_Start(&htim1,AH);
+			GPIOC->ODR|=CL;
+		}
+		else if(ha && (!hb) && (!hc))
+		{
+			HAL_TIM_PWM_Start(&htim1,BH);
+			GPIOC->ODR|=CL;
+		}
+		else if(ha && hb && (!hc))
+		{
+			HAL_TIM_PWM_Start(&htim1,BH);
+			GPIOC->ODR|=AL;
+		}
+		else if((!ha) && (hb) && (!hc))
+		{
+			HAL_TIM_PWM_Start(&htim1,CH);
+			GPIOC->ODR|=AL;
+		}
+		else if((!ha) && (hb) && (hc))
+		{
+			HAL_TIM_PWM_Start(&htim1,CH);
+			GPIOC->ODR|=BL;
+		}
+		else if((!ha) && (!hb) && (hc))
+		{
+			HAL_TIM_PWM_Start(&htim1,AH);
+			GPIOC->ODR|=BL;
 		}
 	}
 	else
 	{
-		switch(step)
+		if(ha && (!hb) && hc)
 		{
-			case 0:
-				CH=controllImpact;
-				GPIOC->ODR|=BL;
-				break;
-			case 1:
-				CH=controllImpact;
-				GPIOC->ODR|=AL;
-				break;
-			case 2:
-				BH=controllImpact;
-				GPIOC->ODR|=AL;
-				break;
-			case 3:
-				BH=controllImpact;
-				GPIOC->ODR|=CL;
-				break;
-			case 4:
-				AH=controllImpact;
-				GPIOC->ODR|=CL;
-				break;
-			case 5:
-				AH=controllImpact;
-				GPIOC->ODR|=BL;
-				break;
+			HAL_TIM_PWM_Start(&htim1,AH);
+			GPIOC->ODR|=BL;
+		}
+		else if(ha && (!hb) && (!hc))
+		{
+			HAL_TIM_PWM_Start(&htim1,AH);
+			GPIOC->ODR|=CL;
+		}
+		else if(ha && hb && (!hc))
+		{
+			HAL_TIM_PWM_Start(&htim1,BH);
+			GPIOC->ODR|=CL;
+		}
+		else if((!ha) && (hb) && (!hc))
+		{
+			HAL_TIM_PWM_Start(&htim1,BH);
+			GPIOC->ODR|=AL;
+		}
+		else if((!ha) && (hb) && (hc))
+		{
+			HAL_TIM_PWM_Start(&htim1,CH);
+			GPIOC->ODR|=AL;
+		}
+		else if((!ha) && (!hb) && (hc))
+		{
+			HAL_TIM_PWM_Start(&htim1,CH);
+			GPIOC->ODR|=BL;
 		}
 	}
-	
-}
-
-uint8_t getHallState(uint8_t state)
-{
-	uint8_t step;
-	switch(state)
-	{
-		case 1:
-			step=1;
-			break;
-		case 2:
-			step=3;
-			break;
-		case 3:
-			step=2;
-			break;
-		case 4:
-			step=5;
-			break;
-		case 5:
-			step=0;
-			break;
-		case 6:
-			step=4;
-			break;
-	}
-	return step;
 }
 
 void EXTI15_10_IRQHandler(void)
 {
 	static uint8_t statePosition=0;
 	uint8_t hallState;
-	currentLoopPID.integralTerm=0;
-	currentLoopPID.prevError=0;
-	/*TIM1->CCR1=0;
-	TIM1->CCR2=0;
-	TIM1->CCR3=0;*/
-	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
-	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_2);
-	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_3);
 	regulatorStart=1;
 	EXTI->PR|=EXTI_PR_PR13;
-	hallState=GPIOB->IDR & 0x7;
-	count=1;
-	beginState=getHallState(hallState);
-	direction=0;
-	sixStep(hallState);
+	//hallState=GPIOB->IDR & 0x7;
+	beginState=hallState;
+	//if(hallState==1)
+	//{
+		currentLoopPID.integralTerm=0;
+		currentLoopPID.prevError=0;
+		startFlag=1;
+		count=1;
+		//direction=0;
+		sixStep(GPIOB->IDR&(1<<0),((GPIOB->IDR&(1<<1))>>1),((GPIOB->IDR&(1<<2))>>2));
+	//}
 }
 
 void buttonInit(void)
@@ -193,34 +170,37 @@ void buttonInit(void)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	uint8_t step=0xF;
-	uint8_t hallState = GPIOB->IDR & 0x7;
-	step=getHallState(hallState);
-	if(count==1)
+	//uint8_t hallState = GPIOB->IDR & 0x7;
+	sixStep(GPIOB->IDR&(1<<0),((GPIOB->IDR&(1<<1))>>1),((GPIOB->IDR&(1<<2))>>2));
+	/*if(startFlag==1)
 	{
-		sixStep(step);
-		count=2;
-	}
-	if(count==2 && hallState!=beginState)
-	{
-		direction=1;
-		sixStep(step);
-		count=0;
-	}
-	/*if(count>1 && count<=4)
-	{
-		direction=1;
-		count++;
-		sixStep(step);
-		if(count=4) count=0;
-	}
-	if(count==1)
-	{
-		direction=0;
-		sixStep(step);
-		count=2;
+		if((hallState==5) && direction==0)
+		{
+			sixStep(hallState);
+		}
+		else if((hallState==4) && direction==0)
+		{
+			sixStep(hallState);
+		}
+		else if((hallState==5) && direction==0)
+		{
+			sixStep(hallState);
+		}
+		else if((hallState==6) && direction==0)
+		{
+			direction=1;
+			sixStep(hallState);
+		}
+		else if((hallState==5) && direction==1)
+		{
+			sixStep(hallState);
+		}
+		else if((hallState==4) && direction==1)
+		{
+			sixStep(hallState);
+			startFlag=0;
+		}
 	}*/
-	
 }
 
 
