@@ -45,9 +45,10 @@ TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
 uint8_t direction=1;
-uint8_t beginState;
+MotorState_t motorState=BEGIN_STATE;
 uint8_t count=0;
 uint8_t startFlag=0;
+MotorPhaseState_t currentPhaseState;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -65,95 +66,276 @@ extern uint8_t regulatorStart;
 
 void sixStep(uint8_t ha,uint8_t hb,uint8_t hc)
 {
-	GPIOC->ODR&=(~(AL|BL|CL));
-	HAL_TIM_PWM_Stop(&htim1,AH);
-	HAL_TIM_PWM_Stop(&htim1,BH);
-	HAL_TIM_PWM_Stop(&htim1,CH);
+	R_AH;
+	R_BH;
+	R_CH;
+	R_AL;
+	R_BL;
+	R_CL;
 	if(direction==0)
 	{
 		if(ha && (!hb) && hc)
 		{
-			HAL_TIM_PWM_Start(&htim1,AH);
-			GPIOC->ODR|=CL;
+			S_AH;
+			S_CL;
 		}
 		else if(ha && (!hb) && (!hc))
 		{
-			HAL_TIM_PWM_Start(&htim1,BH);
-			GPIOC->ODR|=CL;
+			S_BH;
+			S_CL;
 		}
 		else if(ha && hb && (!hc))
 		{
-			HAL_TIM_PWM_Start(&htim1,BH);
-			GPIOC->ODR|=AL;
+			S_BH;
+			S_AL;
 		}
 		else if((!ha) && (hb) && (!hc))
 		{
-			HAL_TIM_PWM_Start(&htim1,CH);
-			GPIOC->ODR|=AL;
+			S_CH;
+			S_AL;
 		}
 		else if((!ha) && (hb) && (hc))
 		{
-			HAL_TIM_PWM_Start(&htim1,CH);
-			GPIOC->ODR|=BL;
+			S_CH;
+			S_BL;
 		}
 		else if((!ha) && (!hb) && (hc))
 		{
-			HAL_TIM_PWM_Start(&htim1,AH);
-			GPIOC->ODR|=BL;
+			S_AH;
+			S_BL;
 		}
 	}
 	else
 	{
 		if(ha && (!hb) && hc)
 		{
-			HAL_TIM_PWM_Start(&htim1,AH);
-			GPIOC->ODR|=BL;
+			S_AH;
+			S_BL;
 		}
 		else if(ha && (!hb) && (!hc))
 		{
-			HAL_TIM_PWM_Start(&htim1,AH);
-			GPIOC->ODR|=CL;
+			S_AH;
+			S_CL;
 		}
 		else if(ha && hb && (!hc))
 		{
-			HAL_TIM_PWM_Start(&htim1,BH);
-			GPIOC->ODR|=CL;
+			S_BH;
+			S_CL;
 		}
 		else if((!ha) && (hb) && (!hc))
 		{
-			HAL_TIM_PWM_Start(&htim1,BH);
-			GPIOC->ODR|=AL;
+			S_BH;
+			S_AL;
 		}
 		else if((!ha) && (hb) && (hc))
 		{
-			HAL_TIM_PWM_Start(&htim1,CH);
-			GPIOC->ODR|=AL;
+			S_CH;
+			S_AL;
 		}
 		else if((!ha) && (!hb) && (hc))
 		{
-			HAL_TIM_PWM_Start(&htim1,CH);
-			GPIOC->ODR|=BL;
+			S_CH;
+			S_BL;
 		}
 	}
+}
+
+void step()
+{
+	R_AH;
+	R_BH;
+	R_CH;
+	R_AL;
+	R_BL;
+	R_CL;
+	if(currentPhaseState.A==P && currentPhaseState.B==N)
+	{
+		S_AH;
+		S_CL;
+		currentPhaseState.A=P;
+		currentPhaseState.B=NC;
+		currentPhaseState.C=N;
+	}
+	else if(currentPhaseState.A==P && currentPhaseState.C==N)
+	{
+		S_BH;
+		S_CL;
+		currentPhaseState.A=NC;
+		currentPhaseState.B=P;
+		currentPhaseState.C=N;
+	}
+	else if(currentPhaseState.B==P && currentPhaseState.C==N)
+	{
+		S_BH;
+		S_AL;
+		currentPhaseState.A=N;
+		currentPhaseState.B=P;
+		currentPhaseState.C=NC;
+	}
+	else if(currentPhaseState.B==P && currentPhaseState.A==N)
+	{
+		S_CH;
+		S_AL;
+		currentPhaseState.A=N;
+		currentPhaseState.B=NC;
+		currentPhaseState.C=P;
+	}
+	else if(currentPhaseState.C==P && currentPhaseState.A==N)
+	{
+		S_CH;
+		S_BL;
+		currentPhaseState.A=NC;
+		currentPhaseState.B=N;
+		currentPhaseState.C=P;
+	}
+	else if(currentPhaseState.C==P && currentPhaseState.B==N)
+	{
+		S_AH;
+		S_BL;
+		currentPhaseState.A=P;
+		currentPhaseState.B=N;
+		currentPhaseState.C=NC;
+	}
+}
+
+void reverseStep()
+{
+	R_AH;
+	R_BH;
+	R_CH;
+	R_AL;
+	R_BL;
+	R_CL;
+	if(currentPhaseState.B==P && currentPhaseState.C==N)
+	{
+		S_AH;
+		S_CL;
+		currentPhaseState.A=P;
+		currentPhaseState.B=NC;
+		currentPhaseState.C=N;
+	}
+	else if(currentPhaseState.B==P && currentPhaseState.A==N)
+	{
+		S_BH;
+		S_CL;
+		currentPhaseState.A=NC;
+		currentPhaseState.B=P;
+		currentPhaseState.C=N;
+	}
+	else if(currentPhaseState.C==P && currentPhaseState.A==N)
+	{
+		S_BH;
+		S_AL;
+		currentPhaseState.A=N;
+		currentPhaseState.B=P;
+		currentPhaseState.C=NC;
+	}
+	else if(currentPhaseState.C==P && currentPhaseState.B==N)
+	{
+		S_CH;
+		S_AL;
+		currentPhaseState.A=N;
+		currentPhaseState.B=NC;
+		currentPhaseState.C=P;
+	}
+	else if(currentPhaseState.A==P && currentPhaseState.B==N)
+	{
+		S_CH;
+		S_BL;
+		currentPhaseState.A=NC;
+		currentPhaseState.B=N;
+		currentPhaseState.C=P;
+	}
+	else if(currentPhaseState.A==P && currentPhaseState.C==N)
+	{
+		S_AH;
+		S_BL;
+		currentPhaseState.A=P;
+		currentPhaseState.B=N;
+		currentPhaseState.C=NC;
+	}
+}
+
+
+MotorPhaseState_t hallAlignment(uint8_t ha,uint8_t hb,uint8_t hc)
+{
+	MotorPhaseState_t phaseState;
+	R_AH;
+	R_BH;
+	R_CH;
+	R_AL;
+	R_BL;
+	R_CL;
+	if(ha && (!hb) && hc)
+	{
+		S_CH;
+		S_BL;
+		phaseState.A=NC;
+		phaseState.B=N;
+		phaseState.C=P;
+	}
+	else if(ha && (!hb) && (!hc))
+	{
+		S_AH;
+		S_BL;
+		phaseState.A=P;
+		phaseState.B=N;
+		phaseState.C=NC;
+	}
+	else if(ha && hb && (!hc))
+	{
+		S_AH;
+		S_CL;
+		phaseState.A=P;
+		phaseState.B=NC;
+		phaseState.C=N;
+	}
+	else if((!ha) && (hb) && (!hc))
+	{
+		S_BH;
+		S_CL;
+		phaseState.A=NC;
+		phaseState.B=P;
+		phaseState.C=N;
+	}
+	else if((!ha) && (hb) && (hc))
+	{
+		S_BH;
+		S_AL;
+		phaseState.A=N;
+		phaseState.B=P;
+		phaseState.C=NC;
+	}
+	else if((!ha) && (!hb) && (hc))
+	{
+		S_CH;
+		S_AL;
+		phaseState.A=N;
+		phaseState.B=NC;
+		phaseState.C=P;
+	}
+	return phaseState;
 }
 
 void EXTI15_10_IRQHandler(void)
 {
 	static uint8_t statePosition=0;
 	uint8_t hallState;
-	regulatorStart=1;
 	EXTI->PR|=EXTI_PR_PR13;
-	//hallState=GPIOB->IDR & 0x7;
-	beginState=hallState;
-	//if(hallState==1)
-	//{
+	if(motorState==BEGIN_STATE)
+	{
 		currentLoopPID.integralTerm=0;
 		currentLoopPID.prevError=0;
-		startFlag=1;
-		count=1;
-		//direction=0;
-		sixStep(GPIOB->IDR&(1<<0),((GPIOB->IDR&(1<<1))>>1),((GPIOB->IDR&(1<<2))>>2));
-	//}
+		currentPhaseState=hallAlignment(GPIOB->IDR&(1<<0),((GPIOB->IDR&(1<<1))>>1),((GPIOB->IDR&(1<<2))>>2));
+		motorState=INITIAL_STATE;
+		regulatorStart=1;
+	}
+	else if(motorState==INITIAL_STATE)
+	{
+		motorState=WORK_STATE;
+		step();
+		//sixStep(GPIOB->IDR&(1<<0),((GPIOB->IDR&(1<<1))>>1),((GPIOB->IDR&(1<<2))>>2));
+	}
 }
 
 void buttonInit(void)
@@ -170,37 +352,25 @@ void buttonInit(void)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	//uint8_t hallState = GPIOB->IDR & 0x7;
-	sixStep(GPIOB->IDR&(1<<0),((GPIOB->IDR&(1<<1))>>1),((GPIOB->IDR&(1<<2))>>2));
-	/*if(startFlag==1)
+	/*if(motorState==WORK_STATE)
+		sixStep(GPIOB->IDR&(1<<0),((GPIOB->IDR&(1<<1))>>1),((GPIOB->IDR&(1<<2))>>2));*/
+	if(motorState==WORK_STATE)
 	{
-		if((hallState==5) && direction==0)
-		{
-			sixStep(hallState);
-		}
-		else if((hallState==4) && direction==0)
-		{
-			sixStep(hallState);
-		}
-		else if((hallState==5) && direction==0)
-		{
-			sixStep(hallState);
-		}
-		else if((hallState==6) && direction==0)
-		{
-			direction=1;
-			sixStep(hallState);
-		}
-		else if((hallState==5) && direction==1)
-		{
-			sixStep(hallState);
-		}
-		else if((hallState==4) && direction==1)
-		{
-			sixStep(hallState);
-			startFlag=0;
-		}
-	}*/
+		step();
+		motorState=REVERSE_STATE_1;
+	}
+	//count++;
+	else if(motorState==REVERSE_STATE_1)
+	{
+		reverseStep();
+		motorState=REVERSE_STATE_2;
+	}
+	else if(motorState==REVERSE_STATE_2)
+	{
+		reverseStep();
+		motorState=INITIAL_STATE;
+	}
+
 }
 
 
@@ -241,7 +411,12 @@ int main(void)
 	adcInit(0);
 	Tim5InitTrigger();
 	setTriggerPetiod(1);
-	GPIOC->ODR&=(~(AL|AH|BL|BH|CL|CH));
+	//GPIOC->ODR&=(~(AL|AH|BL|BH|CL|CH));
+	TIM1->CCR1=0;
+	TIM1->CCR2=0;
+	TIM1->CCR3=0;
+	TIM1->BDTR|=TIM_BDTR_MOE;
+	TIM1->CR1|=TIM_CR1_CEN;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -252,14 +427,6 @@ while (1)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		/*hallState=GPIOB->IDR & 0x7;
-		direction=0;
-		sixStep(hallState);
-		HAL_Delay(200);
-		hallState=GPIOB->IDR & 0x7;
-		direction=1;
-		sixStep(hallState);
-		HAL_Delay(200);*/
   }
   /* USER CODE END 3 */
 }
@@ -329,7 +496,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 6250;
+  htim1.Init.Period = 10000;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -365,7 +532,7 @@ static void MX_TIM1_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.DeadTime = 150;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
@@ -392,17 +559,14 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, AL_Pin|BL_Pin|CL_Pin|GPIO_PIN_4
-                          |GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, AL_Pin|BL_Pin|CL_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : AL_Pin BL_Pin CL_Pin PC4
-                           PC5 */
-  GPIO_InitStruct.Pin = AL_Pin|BL_Pin|CL_Pin|GPIO_PIN_4
-                          |GPIO_PIN_5;
+  /*Configure GPIO pins : AL_Pin BL_Pin CL_Pin */
+  GPIO_InitStruct.Pin = AL_Pin|BL_Pin|CL_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

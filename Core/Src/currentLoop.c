@@ -9,9 +9,9 @@ uint8_t overCurrentFlag=0;
 
 PIDHandle_t currentLoopPID=
 {
-	.kp=1,
-  .ki=0.4,
-  .kd=0.3,
+	.kp=0.5,
+  .ki=0.1,
+  .kd=0,
   .prevError=0,
   .integralTerm=0
 };
@@ -36,13 +36,16 @@ void ADC_IRQHandler(void)
 				currentAmp=0;
 			if(currentAmp>CURRENT_BREAK_LIMIT_AMP)
 			{
-				GPIOC->ODR&=(~(AL|BL|CL));
+				TIM1->BDTR&=~TIM_BDTR_MOE;
 				TIM1->CCR1=0;
 				TIM1->CCR2=0;
 				TIM1->CCR3=0;
-				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_1);
-				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_2);
-				HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_3);
+				R_AH;
+				R_BH;
+				R_CH;
+				R_AL;
+				R_BL;
+				R_CL;
 				regulatorStart=0;
 				overCurrentFlag=1;
 			}

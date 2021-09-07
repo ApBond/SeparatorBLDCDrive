@@ -42,12 +42,19 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-#define AL (1<<0)
-#define AH (TIM_CHANNEL_1)
-#define BL (1<<1)
-#define BH (TIM_CHANNEL_2)
-#define CL (1<<2)
-#define CH (TIM_CHANNEL_3)
+#define S_AL TIM1->CCER|=TIM_CCER_CC1NE
+#define S_AH TIM1->CCER|=TIM_CCER_CC1E
+#define S_BL TIM1->CCER|=TIM_CCER_CC2NE
+#define S_BH TIM1->CCER|=TIM_CCER_CC2E
+#define S_CL TIM1->CCER|=TIM_CCER_CC3NE
+#define S_CH TIM1->CCER|=TIM_CCER_CC3E
+
+#define R_AL TIM1->CCER&=~TIM_CCER_CC1NE
+#define R_AH TIM1->CCER&=~TIM_CCER_CC1E
+#define R_BL TIM1->CCER&=~TIM_CCER_CC2NE
+#define R_BH TIM1->CCER&=~TIM_CCER_CC2E
+#define R_CL TIM1->CCER&=~TIM_CCER_CC3NE
+#define R_CH TIM1->CCER&=~TIM_CCER_CC3E
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -78,7 +85,28 @@ void Error_Handler(void);
 #define CH_Pin GPIO_PIN_10
 #define CH_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
+typedef enum
+{
+	BEGIN_STATE,
+	INITIAL_STATE,
+	WORK_STATE,
+	REVERSE_STATE_1,
+	REVERSE_STATE_2
+}MotorState_t;
 
+typedef enum
+{
+	P,
+	N,
+	NC
+}PhaseState_t;
+
+typedef struct
+{
+	PhaseState_t A;
+	PhaseState_t B;
+	PhaseState_t C;
+}MotorPhaseState_t;
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
